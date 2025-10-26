@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PowerShell
+        uses: PowerShell/PowerShell@v1
+
+      - name: Install Pester
+        run: pwsh -Command "Install-Module Pester -Force -Scope CurrentUser"
+
+      - name: Run Tests
+        run: pwsh -Command "Invoke-Pester -Path tests -Output Detailed"

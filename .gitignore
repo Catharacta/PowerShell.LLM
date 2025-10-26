@@ -1,0 +1,9 @@
+# PowerShell
+*.psd1
+*.psm1
+
+# APIキーファイル
+.env
+
+# VSCode / IDE
+.vscode/
