@@ -40,15 +40,31 @@ if (-not $phases -or $phases.Count -eq 0) {
     exit 1
 }
 
+# === キャンセル項目を追加 ===
+$phases += "[Cancel]"
+
 # === 選択肢を表示 ===
 Write-Host "📘 Select a Phase to import:`n"
 for ($i = 0; $i -lt $phases.Count; $i++) {
     Write-Host "[$($i + 1)] $($phases[$i])"
 }
 
-# === ユーザー選択 ===
-$selection = Read-Host "`nEnter number (1-$($phases.Count))"
+# === ユーザー選択（Enterだけでキャンセル） ===
+$selection = Read-Host "`nEnter number (1-$($phases.Count)) [Press Enter to Cancel]"
+
+# === 空入力（Enterのみ）でキャンセル ===
+if ([string]::IsNullOrWhiteSpace($selection)) {
+    Write-Host "`n🚪 Operation cancelled (no input)."
+    exit 0
+}
+
+# === 数値入力の検証 ===
 if ($selection -match '^\d+$' -and $selection -ge 1 -and $selection -le $phases.Count) {
+    if ($phases[$selection - 1] -eq "[Cancel]") {
+        Write-Host "`n🚪 Operation cancelled by user."
+        exit 0
+    }
+
     $phase = $phases[$selection - 1]
     Write-Host "`n✅ Selected phase: $phase"
 } else {
