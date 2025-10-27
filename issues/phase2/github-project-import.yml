@@ -1,0 +1,124 @@
+# github-project-import.yml
+# PowerShell.LLM - Phase 2: Prompt Template & Extensibility Roadmap
+# 使用方法（例）:
+#   gh issue create -F github-project-import.yml
+#   または GitHub Project で「Import YAML」機能を利用
+
+issues:
+  - title: "🧩 Implement New-LLMPromptTemplate Command"
+    body: |
+      **概要**
+      ユーザーがプロンプトテンプレートを作成・保存できるコマンドを追加する。
+
+      **完了条件**
+      - コマンド実装済み
+      - `$HOME/.config/PowerShell.LLM/templates.json` に保存可能
+      - テンプレート登録テストが成功する
+    labels: ["phase2", "feature", "template"]
+
+  - title: "🧩 Implement Get-LLMPromptTemplate / Remove-LLMPromptTemplate"
+    body: |
+      **概要**
+      登録済みテンプレートの一覧取得と削除機能を実装する。
+
+      **完了条件**
+      - 一覧コマンドで登録済みテンプレートを取得
+      - 特定テンプレート削除が成功
+    labels: ["phase2", "feature", "template"]
+
+  - title: "🧩 Add -Template / -Data parameters to Invoke-LLM"
+    body: |
+      **概要**
+      `Invoke-LLM` にテンプレート呼び出し機能を追加する。
+
+      **完了条件**
+      - 変数展開（{{input}} 等）が機能する
+      - Mock モードで出力確認できる
+    labels: ["phase2", "feature", "core"]
+
+  - title: "🧾 Add -OutputFormat parameter (JSON / Markdown / Text)"
+    body: |
+      **概要**
+      出力フォーマットを選択できるようにする。
+
+      **完了条件**
+      - `-OutputFormat JSON` が構造体返却
+      - `-OutputFormat Markdown` が装飾保持
+    labels: ["phase2", "enhancement"]
+
+  - title: "⚙️ Modularize Provider structure"
+    body: |
+      **概要**
+      Provider構造を `src/providers/` に分離し、登録制に変更する。
+
+      **完了条件**
+      - `Register-LLMProvider`, `Get-LLMProviders` 実装
+      - `Invoke-LLM` が動的に Provider を呼び出す
+    labels: ["phase2", "refactor", "architecture"]
+
+  - title: "⚙️ Add example Provider: Invoke-Anthropic.ps1"
+    body: |
+      **概要**
+      拡張サンプルとして Anthropic API のモックProviderを追加する。
+
+      **完了条件**
+      - Mock出力で動作
+      - `Invoke-LLM -Provider anthropic` が成功
+    labels: ["phase2", "feature", "provider"]
+
+  - title: "⚡ Implement -Stream option (streaming output)"
+    body: |
+      **概要**
+      ChatGPT風のリアルタイム出力機能を追加する。
+
+      **完了条件**
+      - `Invoke-LLM -Stream` で逐次出力
+      - MockProviderでストリーム出力再現
+    labels: ["phase2", "feature", "stream"]
+
+  - title: "🧪 Add Pester tests for templates (Templates.Tests.ps1)"
+    body: |
+      **概要**
+      テンプレート関連のユニットテストを追加。
+
+      **完了条件**
+      - New/Get/Remove コマンドのテスト成功
+    labels: ["phase2", "test"]
+
+  - title: "⚙️ Setup GitHub Actions CI"
+    body: |
+      **概要**
+      `.github/workflows/test.yml` を追加して自動テストを実行。
+
+      **完了条件**
+      - Pester テストが自動実行される
+      - 成功時に ✅ バッジをREADMEに表示
+    labels: ["phase2", "ci", "automation"]
+
+  - title: "📘 Create docs/phase2-spec.md"
+    body: |
+      **概要**
+      Phase 2 の機能設計仕様書を作成し、設計を明文化。
+
+      **完了条件**
+      - 各コマンドの仕様・戻り値・例が整理されている
+    labels: ["phase2", "docs"]
+
+  - title: "📘 Update README with Phase 2 examples"
+    body: |
+      **概要**
+      READMEにテンプレート利用例を追加。
+
+      **完了条件**
+      - `New-LLMPromptTemplate` / `Invoke-LLM -Template` の使用例を追記
+    labels: ["phase2", "docs"]
+
+  - title: "🧩 Final integration test & Phase 2 PR"
+    body: |
+      **概要**
+      Phase 2 全体の統合テストとプルリク作成。
+
+      **完了条件**
+      - 全テスト成功
+      - PR作成・レビュー完了
+    labels: ["phase2", "release"]

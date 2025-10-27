@@ -1,0 +1,67 @@
+# project-config.yml
+# PowerShell.LLM - Phase 2 Project Board Configuration
+# -----------------------------------------------------
+# この設定は GitHub Projects (v2) の自動構成を想定しています。
+# 各カラムは Issue の状態変化に応じて自動で移動します。
+
+name: "PowerShell.LLM - Phase 2: Prompt Template & Extensibility"
+
+description: >
+  PowerShell.LLM Phase 2 の開発進捗を管理するプロジェクトボード。
+  各 Issue は機能別に追跡され、自動でステータスが更新されます。
+  - Phase 1: コア機能実装 (完了)
+  - Phase 2: プロンプトテンプレート、Provider拡張、CI整備
+
+columns:
+  - name: "📋 To Do"
+    description: "未着手のタスク。新しいIssueは自動的にここに追加されます。"
+  - name: "⚙️ In Progress"
+    description: "現在開発中または実装途中のタスク。"
+  - name: "🔍 Review"
+    description: "PRが作成されレビュー待ちのタスク。"
+  - name: "✅ Done"
+    description: "完了済み（マージ済み）のタスク。"
+
+automation:
+  # 新しいIssueが作成されたら To Do に移動
+  - trigger: "issue_opened"
+    action: "move_to_column"
+    column: "📋 To Do"
+
+  # 担当者が割り当てられたら In Progress に移動
+  - trigger: "issue_assigned"
+    action: "move_to_column"
+    column: "⚙️ In Progress"
+
+  # Pull Request が開かれたら Review に移動
+  - trigger: "pull_request_opened"
+    action: "move_to_column"
+    column: "🔍 Review"
+
+  # Issue がクローズされたら Done に移動
+  - trigger: "issue_closed"
+    action: "move_to_column"
+    column: "✅ Done"
+
+labels:
+  phase2:
+    color: "#0366d6"
+    description: "Phase 2: Prompt Template / Extensibility work"
+  feature:
+    color: "#0e8a16"
+    description: "新機能開発"
+  enhancement:
+    color: "#fbca04"
+    description: "既存機能拡張"
+  docs:
+    color: "#6f42c1"
+    description: "ドキュメント更新"
+  ci:
+    color: "#d93f0b"
+    description: "CI/CD 関連"
+  test:
+    color: "#0052cc"
+    description: "テストコード関連"
+  release:
+    color: "#5319e7"
+    description: "リリース関連"
