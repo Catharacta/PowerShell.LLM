@@ -16,32 +16,76 @@ OpenAI / Ollama / Azure OpenAI / HuggingFace などのプロバイダーを統�
 
 ## 🧱 フォルダ構成
 
-├── src/
-│ ├── PowerShell.LLM.psm1
-│ ├── PowerShell.LLM.psd1
-│ └── Providers/
-│ ├── OpenAI.psm1
-│ ├── Ollama.psm1
-│ └── AzureOpenAI.psm1
+PowerShell.LLM/
+├── .gitignore
+├── PROJECT_PLAN.md
+├── README.md
+├── ROADMAP.md
 │
-├── tests/
-│ ├── Invoke-LLM.Tests.ps1
-│ ├── Providers.Tests.ps1
-│ └── Session.Tests.ps1
+├── .github/
+│   ├── copilot-instructions.md
+│   └── workflows/
+│       └── ci.yml
+│
+├── .vscode/
+│   ├── settings.json
+│   └── tasks.json
+│
+├── automation/
+│   ├── create_issues_from_yaml.ps1
+│   ├── get_phase_list.ps1
+│   └── run_with_phase.ps1
 │
 ├── examples/
-│ ├── basic.ps1
-│ ├── chat.ps1
-│ └── rag-example.ps1
+│   ├── 01_basic.ps1
+│   └── 02_local_ollama.ps1
 │
-├── .github/workflows/
-│ ├── test.yml
-│ ├── release.yml
-│ └── lint.yml
+├── issues/
+│   ├── phase2/
+│   │   ├── github-project-import.yml
+│   │   └── project-config.yml
+│   │
+│   └── phase3/
 │
-├── ROADMAP.md
-├── PROJECT_PLAN.md
-└── README.md
+├── src/
+│   ├── PowerShell.LLM.psd1
+│   ├── PowerShell.LLM.psm1
+│   │
+│   ├── Commands/
+│   │   ├── Get-LLMProvider.ps1
+│   │   ├── Invoke-LLM.ps1
+│   │   ├── New-LLMPromptTemplate.ps1
+│   │   └── Test-LLMConnection.ps1
+│   │
+│   ├── Core/
+│   │   ├── Config.ps1
+│   │   ├── ErrorHandling.ps1
+│   │   ├── Logger.ps1
+│   │   └── Utils.ps1
+│   │
+│   ├── Data/
+│   │   ├── config.sample.json
+│   │   └── cache/
+│   │       └── history.json
+│   │
+│   ├── Providers/
+│   │   ├── Anthropic.ps1
+│   │   ├── AzureOpenAI.ps1
+│   │   ├── MockLLM.ps1
+│   │   ├── Ollama.ps1
+│   │   └── OpenAI.ps1
+│   │
+│   └── Templates/
+│       ├── custom/
+│       │   └── mytemplate.txt
+│       │
+│       └── default/
+│           ├── chat.txt
+│           └── summarize.txt
+│
+└── tests/
+    └── Invoke-LLM.Tests.ps1
+
 
 
 ---
