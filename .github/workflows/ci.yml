@@ -8,14 +8,25 @@ on:
 jobs:
   test:
     runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Setup PowerShell
-        uses: PowerShell/PowerShell@v1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PowerShell 7
+        shell: pwsh
+        run: |
+          pwsh --version
+          Write-Host "✅ PowerShell is available."
 
       - name: Install Pester
-        run: pwsh -Command "Install-Module Pester -Force -Scope CurrentUser"
+        shell: pwsh
+        run: |
+          Install-Module Pester -Force -Scope CurrentUser
+          Import-Module Pester
+          Write-Host "✅ Pester installed."
 
       - name: Run Tests
-        run: pwsh -Command "Invoke-Pester -Path tests -Output Detailed"
+        shell: pwsh
+        run: |
+          Invoke-Pester -Path Invoke-LLM.Tests -Output Detailed
