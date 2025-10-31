@@ -1,41 +1,59 @@
+# src/Providers/OpenAI.ps1
+
 function Invoke-OpenAI {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]$Prompt,
 
-        [string]$Model = "gpt-4o-mini",
-
-        [string]$ApiKey = $env:OPENAI_API_KEY,
-
-        [string]$Endpoint = "https://api.openai.com/v1/chat/completions"
+        [string]$Model = "gpt-4o-mini"
     )
 
-    if (-not $ApiKey) {
-        throw "OPENAI_API_KEY environment variable not set."
-    }
-
-    Write-Verbose "Calling OpenAI API with model: $Model"
-
-    $body = @{
-        model = $Model
-        messages = @(
-            @{ role = "user"; content = $Prompt }
-        )
-    } | ConvertTo-Json -Depth 5
-
     try {
-        $response = Invoke-RestMethod -Uri $Endpoint `
-                                      -Headers @{ "Authorization" = "Bearer $ApiKey" } `
-                                      -ContentType "application/json" `
-                                      -Method POST `
-                                      -Body $body
+        # --- 設定を取得 ---
+        $config = Get-LLMConfig -Provider "openai"
 
-        return $response.choices[0].message.content
+        $apiKey = $null
+
+        # 優先順位: config → 環境変数
+        if ($config -and $config.ApiKey) {
+            $apiKey = $config.ApiKey
+        } elseif ($env:OPENAI_API_KEY) {
+            $apiKey = $env:OPENAI_API_KEY
+        }
+
+        if (-not $apiKey) {
+            throw [System.Exception] "❌ OpenAI APIキーが見つかりません。`OPENAI_API_KEY` または設定ファイルを確認してください。"
+        }
+
+        # --- APIリクエスト準備 ---
+        $uri = "https://api.openai.com/v1/chat/completions"
+        $headers = @{
+            "Authorization" = "Bearer $apiKey"
+            "Content-Type"  = "application/json"
+        }
+
+        $body = @{
+            model    = $Model
+            messages = @(@{ role = "user"; content = $Prompt })
+        } | ConvertTo-Json -Depth 5
+
+        Write-LLMLog "Sending request to OpenAI ($Model)..." "INFO"
+
+        # --- APIコール ---
+        $response = Invoke-RestMethod -Uri $uri -Headers $headers -Body $body -Method Post -ErrorAction Stop
+
+        # --- レスポンス処理 ---
+        if ($response.choices) {
+            $text = $response.choices[0].message.content
+            Write-LLMLog "Response received: $($text.Substring(0, [Math]::Min(80, $text.Length)))..." "DEBUG"
+            return $text
+        } else {
+            throw [System.Exception] "OpenAIからの応答が不正です。"
+        }
     }
     catch {
-        throw "OpenAI request failed: $_"
+        Handle-LLMError -ErrorRecord $_ -Context "Invoke-OpenAI"
+        return $null
     }
 }
-
-Export-ModuleMember -Function Invoke-OpenAI

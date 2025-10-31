@@ -84,7 +84,22 @@ PowerShell.LLM/
 │           └── summarize.txt
 │
 └── tests/
-    └── Invoke-LLM.Tests.ps1
+    ├── Core/
+    │   ├── Config.Tests.ps1
+    │   ├── Logger.Tests.ps1
+    │   ├── ErrorHandling.Tests.ps1
+    │   └── Utils.Tests.ps1
+    ├── Providers/
+    │   ├── Anthropic.Tests.ps1
+    │   ├── AzureOpenAI.Tests.ps1
+    │   ├── MockLLM.Tests.ps1
+    │   ├── OpenAI.Tests.ps1
+    │   └── Ollama.Tests.ps1
+    └── Commands/
+        ├── Invoke-LLM.Tests.ps1
+        ├── Get-LLMProvider.Tests.ps1
+        ├── New-LLMPromptTemplate.Tests.ps1
+        └── Test-LLMConnection.Tests.ps1
 
 
 

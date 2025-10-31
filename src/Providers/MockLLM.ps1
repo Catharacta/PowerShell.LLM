@@ -1,15 +1,26 @@
+# src/Providers/MockLLM.ps1
+
 function Invoke-MockLLM {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]$Prompt,
 
-        [string]$Model = "mock-model"
+        [string]$Model = "mock"
     )
 
-    Write-Verbose "Mock LLM called with model: $Model"
+    try {
+        Write-LLMLog "MockLLM: received prompt '$Prompt'" "INFO"
 
-    return "Mock response (model: $Model): You said '$Prompt'"
+        Start-Sleep -Milliseconds 300
+
+        $response = "🧠 Mock response for: $Prompt"
+        Write-LLMLog "MockLLM: returning simulated output" "DEBUG"
+
+        return $response
+    }
+    catch {
+        Handle-LLMError -ErrorRecord $_ -Context "Invoke-MockLLM"
+        return $null
+    }
 }
-
-Export-ModuleMember -Function Invoke-MockLLM

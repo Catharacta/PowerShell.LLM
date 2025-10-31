@@ -1,39 +1,56 @@
+# src/Providers/Ollama.ps1
+# ===========================
+# Local Ollama Provider
+# ===========================
+
 function Invoke-Ollama {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]$Prompt,
 
-        [string]$Model = "llama3",
-
-        [string]$Endpoint = "http://localhost:11434/api/generate"
+        [string]$Model = "llama3"
     )
 
-    Write-Verbose "Calling Ollama with model: $Model"
-
-    $body = @{
-        model = $Model
-        prompt = $Prompt
-    } | ConvertTo-Json -Depth 3
-
     try {
-        $response = Invoke-RestMethod -Uri $Endpoint `
-                                      -Method POST `
-                                      -ContentType "application/json" `
-                                      -Body $body
+        # --- Load config ---
+        $config = $null
+        if (Get-Command Get-LLMConfig -ErrorAction SilentlyContinue) {
+            $config = Get-LLMConfig -Provider "ollama"
+        }
 
-        # Ollamaはstreamを返す場合があるため、結果処理を調整
+        $apiUrl = if ($config.Url) { $config.Url } else { "http://localhost:11434/api/generate" }
+
+        Write-LLMLog "Ollama" "POST $apiUrl" "INFO"
+
+        # --- Build request body ---
+        $body = @{
+            model  = $Model
+            prompt = $Prompt
+            stream = $false
+        } | ConvertTo-Json -Depth 5
+
+        # --- Send request ---
+        try {
+            $response = Invoke-RestMethod -Uri $apiUrl -Body $body -Method Post -ContentType "application/json" -ErrorAction Stop
+        }
+        catch {
+            Handle-LLMError -Provider "Ollama" -ErrorRecord $_
+            throw
+        }
+
+        # --- Parse response ---
         if ($response.response) {
+            $preview = $response.response.Substring(0, [Math]::Min(80, $response.response.Length))
+            Write-LLMLog "Ollama" "Response: $preview..." "DEBUG"
             return $response.response
-        } elseif ($response.output) {
-            return ($response.output | ForEach-Object { $_.response }) -join ""
-        } else {
-            return $response
+        }
+        else {
+            throw "Invalid response from Ollama API."
         }
     }
     catch {
-        throw "Ollama request failed: $_"
+        Handle-LLMError -Provider "Ollama" -ErrorRecord $_
+        throw
     }
 }
-
-Export-ModuleMember -Function Invoke-Ollama
