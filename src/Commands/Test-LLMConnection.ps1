@@ -8,9 +8,17 @@ function Test-LLMConnection {
         [string]$Provider = "OpenAI"
     )
 
-    Write-LLMLog -Message "Testing LLM connection for provider: $Provider" -Level "Info"
-
     try {
+        Write-LLMLog -Message "Testing LLM connection for provider: $Provider" -Level "Info"
+
+        if ($Provider -eq 'mock') {
+            Write-LLMLog "Mock provider: connection test always succeeds." "INFO"
+            return @{
+                Provider = 'mock'
+                Status   = 'Success'
+                Message  = 'Mock provider connection simulated successfully.'
+            }
+        }
         $config = Get-LLMConfig -Provider $Provider
         $apiKey = $config.ApiKey
         if (-not $apiKey) { throw "APIキーが取得できません。" }

@@ -75,3 +75,35 @@ function Clear-LLMLogCache {
     $Script:LLMLogCache = @()
     Write-Host "🧹 LLMログキャッシュをクリアしました。"
 }
+
+function Flush-LLMLogs {
+    <#
+    .SYNOPSIS
+        セッションキャッシュのログを書き出す。
+    #>
+    param(
+        [string]$Path = "$PSScriptRoot/../Data/cache/session.log"
+    )
+
+    try {
+        if (-not (Test-Path (Split-Path $Path))) {
+            New-Item -ItemType Directory -Force -Path (Split-Path $Path) | Out-Null
+        }
+
+        # Scriptスコープのログキャッシュを書き出し
+        if ($Script:LLMLogCache -and $Script:LLMLogCache.Count -gt 0) {
+            $Script:LLMLogCache | ForEach-Object {
+                $line = "[{0}][{1}] {2}" -f $_.Time, $_.Level, $_.Message
+                Add-Content -Path $Path -Value $line
+            }
+            Write-LLMLog "Session logs flushed to $Path" "DEBUG"
+        }
+        else {
+            Write-LLMLog "No logs to flush." "DEBUG"
+        }
+    }
+    catch {
+        Write-Warning "Failed to flush LLM logs: $_"
+    }
+}
+
