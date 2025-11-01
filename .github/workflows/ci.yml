@@ -1,32 +1,139 @@
-name: CI
+name: PowerShell.LLM CI
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
+    branches: [ "main" ]
 
 jobs:
   test:
     runs-on: windows-latest
 
     steps:
+      # --- 1️⃣ ソースコード取得 ---
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup PowerShell 7
-        shell: pwsh
-        run: |
-          pwsh --version
-          Write-Host "✅ PowerShell is available."
+      # --- 2️⃣ PowerShell モジュールキャッシュ ---
+      - name: Cache PowerShell Modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/powershell/Modules
+          key: ${{ runner.os }}-psmodules-${{ hashFiles('**/PowerShell.LLM.psd1') }}
+          restore-keys: |
+            ${{ runner.os }}-psmodules-
 
-      - name: Install Pester
-        shell: pwsh
-        run: |
-          Install-Module Pester -Force -Scope CurrentUser
-          Import-Module Pester
-          Write-Host "✅ Pester installed."
+      # --- 3️⃣ PowerShell 7.x セットアップ ---
+      - name: Setup PowerShell
+        uses: actions/setup-pwsh@v2
+        with:
+          pwsh-version: '7.4.1'
 
-      - name: Run Tests
-        shell: pwsh
+      # --- 4️⃣ 依存モジュールのインストール ---
+      - name: Install dependencies
         run: |
-          Invoke-Pester -Path Invoke-LLM.Tests -Output Detailed
+          pwsh -Command "Install-Module Pester -Force -Scope CurrentUser"
+          pwsh -Command "Install-Module PSScriptAnalyzer -Force -Scope CurrentUser"
+
+      # --- 5️⃣ コード規約チェック（PSScriptAnalyzer） ---
+      - name: Run Script Analyzer
+        id: lint
+        run: |
+          $issues = Invoke-ScriptAnalyzer -Path ./src -Recurse -Severity Warning -ErrorAction SilentlyContinue
+          if ($issues) {
+            $issues | ConvertTo-Json -Depth 4 | Out-File script-analyzer-results.json
+            Write-Host "❌ Lint warnings found"
+          } else {
+            Write-Host "✅ No lint issues found"
+          }
+
+      # --- 5.5️⃣ FunctionsToExport 検証（update-psd1.ps1 -CheckOnly） ---
+      - name: Validate FunctionsToExport consistency
+        run: |
+          if (-not (Test-Path ./artifacts)) { New-Item -ItemType Directory -Path ./artifacts | Out-Null }
+          pwsh ./build/update-psd1.ps1 -CheckOnly 2>&1 | Tee-Object -FilePath ./artifacts/psd1-check.log
+        continue-on-error: true
+
+      # --- 6️⃣ モジュール読み込みテスト ---
+      - name: Import Module
+        run: |
+          pwsh -Command "Import-Module ./src/PowerShell.LLM.psd1 -Force; Get-Module PowerShell.LLM"
+
+      # --- 7️⃣ Pester テスト実行 ---
+      - name: Run Pester tests
+        id: pester
+        run: |
+          $result = Invoke-Pester -Path './tests' -Output Detailed -PassThru
+          $result.TestResult | ConvertTo-Json -Depth 5 | Out-File pester-results.json
+          if (-not (Test-Path ./artifacts)) { New-Item -ItemType Directory -Path ./artifacts | Out-Null }
+          $result | Export-Clixml ./artifacts/pester-results.xml
+          if ($result.FailedCount -gt 0) { exit 1 }
+
+      # --- 8️⃣ 成果物アップロード（テスト結果 & セッションログ & psd1チェックログ） ---
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pester-results
+          path: ./artifacts/pester-results.xml
+
+      - name: Upload session logs
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: session-logs
+          path: ./src/Data/cache/session.log
+
+      - name: Upload psd1 check log
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: psd1-check
+          path: ./artifacts/psd1-check.log
+
+      # --- 9️⃣ Mock Provider テスト ---
+      - name: Run Mock Provider Test
+        run: |
+          pwsh -Command "Import-Module ./src/PowerShell.LLM.psd1 -Force; Invoke-LLM -Prompt 'Hello from CI' -Provider 'mock' -Verbose"
+
+      # --- 🔟 Lint結果とテスト要約をPRにコメント ---
+      - name: Comment results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let pester = [];
+            let lint = [];
+
+            try { pester = JSON.parse(fs.readFileSync('pester-results.json', 'utf8')); } catch {}
+            try { lint = JSON.parse(fs.readFileSync('script-analyzer-results.json', 'utf8')); } catch {}
+
+            const passed = pester.filter(t => t.Outcome === 'Passed').length;
+            const failed = pester.filter(t => t.Outcome === 'Failed').length;
+            const skipped = pester.filter(t => t.Outcome === 'Skipped').length;
+            const lintCount = lint.length || 0;
+
+            const emoji = failed > 0 ? "❌" : "✅";
+            const lintEmoji = lintCount > 0 ? "⚠️" : "🧹";
+
+            const summary = `
+            ${emoji} **Pester Test Summary**
+            | Status | Passed | Failed | Skipped |
+            |:------:|:------:|:------:|:--------:|
+            | ${emoji} | ${passed} | ${failed} | ${skipped} |
+
+            ${lintEmoji} **Script Analyzer Results**
+            | Type | Count |
+            |:----:|:------:|
+            | Warnings | ${lintCount} |
+            `;
+
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
