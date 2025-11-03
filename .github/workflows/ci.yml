@@ -25,10 +25,8 @@ jobs:
             ${{ runner.os }}-psmodules-
 
       # --- 3️⃣ PowerShell 7.x セットアップ ---
-      - name: Setup PowerShell
-        uses: PowerShell/setup-powershell@v2
-        with:
-          pwsh-version: '7.4.1'
+      # 削除した Setup PowerShell の代わりに何もしない（pwshは既にある）
+      # --- 3️⃣ PowerShell 7.x セットアップ --- (削除)
 
       # --- 4️⃣ 依存モジュールのインストール ---
       - name: Install dependencies
