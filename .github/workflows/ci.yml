@@ -1,5 +1,10 @@
 name: PowerShell.LLM CI
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 on:
   push:
     branches: [ "main" ]
@@ -133,9 +138,14 @@ jobs:
             | Warnings | ${lintCount} |
             `;
 
-            await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: summary
-            });
+            try {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+              console.log("✅ Comment posted successfully.");
+            } catch (error) {
+              console.warn("⚠️ Skipping comment (no permission):", error.message);
+            }
