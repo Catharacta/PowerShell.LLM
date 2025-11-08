@@ -68,7 +68,15 @@ jobs:
         id: pester
         run: |
           $result = Invoke-Pester -Path './tests' -Output Detailed -PassThru
-          $result.TestResult | ConvertTo-Json -Depth 5 | Out-File pester-results.json
+
+          $allTests = @()
+          if ($result.Passed) { $allTests += $result.Passed }
+          if ($result.Failed) { $allTests += $result.Failed }
+          if ($result.Skipped) { $allTests += $result.Skipped }
+
+          $summary = $allTests | Select-Object Name, Result, Duration, ErrorRecord
+          $summary | ConvertTo-Json -Depth 1 | Out-File pester-results.json
+
           if (-not (Test-Path ./artifacts)) { New-Item -ItemType Directory -Path ./artifacts | Out-Null }
           $result | Export-Clixml ./artifacts/pester-results.xml
           if ($result.FailedCount -gt 0) { exit 1 }
@@ -114,13 +122,16 @@ jobs:
             try { pester = JSON.parse(fs.readFileSync('pester-results.json', 'utf8')); } catch {}
             try { lint = JSON.parse(fs.readFileSync('script-analyzer-results.json', 'utf8')); } catch {}
 
-            // 🩹 null や不正データを防御
-            if (!Array.isArray(pester)) pester = [];
-            if (!Array.isArray(lint)) lint = [];
-      
-            const passed = pester.filter(t => t.Outcome === 'Passed').length;
-            const failed = pester.filter(t => t.Outcome === 'Failed').length;
-            const skipped = pester.filter(t => t.Outcome === 'Skipped').length;
+            if (!Array.isArray(pester)) {
+              pester = pester?.Tests || pester?.Results || [];
+            }
+
+            // 👇 Outcome と Result 両方に対応
+            const getOutcome = t => t.Outcome || t.Result || "";
+
+            const passed = pester.filter(t => getOutcome(t) === 'Passed').length;
+            const failed = pester.filter(t => getOutcome(t) === 'Failed').length;
+            const skipped = pester.filter(t => getOutcome(t) === 'Skipped').length;
             const lintCount = lint.length || 0;
 
             const emoji = failed > 0 ? "❌" : "✅";
