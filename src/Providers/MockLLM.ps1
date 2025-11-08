@@ -1,4 +1,7 @@
 # src/Providers/MockLLM.ps1
+# ==============================
+# Mock LLM Provider (for testing)
+# ==============================
 
 function Invoke-MockLLM {
     [CmdletBinding()]
@@ -10,12 +13,19 @@ function Invoke-MockLLM {
     )
 
     try {
-        Write-LLMLog "MockLLM: received prompt '$Prompt'" "INFO"
+        # ✅ 呼び出し検出ログ（テストがこのINFOログを探す）
+        Write-LLMLog -Message "Invoke-MockLLM called with model '$Model'" -Level "INFO"
 
+        # ✅ プロンプトを受け取ったログ
+        Write-LLMLog -Message "MockLLM: received prompt '$Prompt'" -Level "INFO"
+
+        # 模擬的な処理
         Start-Sleep -Milliseconds 300
 
         $response = "🧠 Mock response for: $Prompt"
-        Write-LLMLog "MockLLM: returning simulated output" "DEBUG"
+
+        # ✅ 出力を返すログ
+        Write-LLMLog -Message "MockLLM: returning simulated output" -Level "DEBUG"
 
         return $response
     }

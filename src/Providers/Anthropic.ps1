@@ -28,6 +28,9 @@ function Invoke-Anthropic {
             throw "Anthropic API key not found. Please set `$env:ANTHROPIC_API_KEY` or use config.json."
         }
 
+        # ✅ 呼び出しログを先頭で出す（テストでこれを検証している）
+        Write-LLMLog -Level "INFO" -Message "Invoke-Anthropic called with model '$Model'"
+
         # --- Prepare request ---
         $uri = "https://api.anthropic.com/v1/messages"
         $headers = @{
@@ -42,14 +45,14 @@ function Invoke-Anthropic {
             messages   = @(@{ role = "user"; content = $Prompt })
         } | ConvertTo-Json -Depth 5
 
-        Write-LLMLog "Anthropic" "POST $uri" "INFO"
+        Write-LLMLog -Level "INFO" -Message "Anthropic: POST $uri"
 
         # --- API call ---
         try {
             $response = Invoke-RestMethod -Uri $uri -Headers $headers -Body $body -Method Post -ErrorAction Stop
         }
         catch {
-            Handle-LLMError -Provider "Anthropic" -ErrorRecord $_
+            Handle-LLMError -Message "Anthropic request failed" -Exception $_.Exception -Context "Anthropic"
             throw
         }
 
@@ -59,11 +62,11 @@ function Invoke-Anthropic {
             throw "Invalid response from Anthropic API."
         }
 
-        Write-LLMLog "Anthropic" "Response: $($content.Substring(0, [Math]::Min(80, $content.Length)))..." "DEBUG"
+        Write-LLMLog -Level "DEBUG" -Message "Anthropic response: $($content.Substring(0, [Math]::Min(80, $content.Length)))..."
         return $content
     }
     catch {
-        Handle-LLMError -Provider "Anthropic" -ErrorRecord $_
+        Handle-LLMError -Message $_.Exception.Message -Exception $_.Exception -Context "Anthropic"
         throw
     }
 }

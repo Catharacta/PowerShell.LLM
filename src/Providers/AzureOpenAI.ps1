@@ -36,6 +36,9 @@ function Invoke-AzureOpenAI {
         # --- Construct API URL ---
         $url = "$endpoint/openai/deployments/$Model/chat/completions?api-version=2024-02-01"
 
+        # ✅ 呼び出しログ（テストがこれを検証している）
+        Write-LLMLog -Level "INFO" -Message "Invoke-AzureOpenAI called with model '$Model'"
+
         # --- Prepare request body ---
         $body = @{
             messages = @(
@@ -46,18 +49,18 @@ function Invoke-AzureOpenAI {
 
         # --- Headers ---
         $headers = @{
-            "api-key"    = $apiKey
+            "api-key"      = $apiKey
             "Content-Type" = "application/json"
         }
 
-        Write-LLMLog "AzureOpenAI" "POST $url"
+        Write-LLMLog -Level "INFO" -Message "AzureOpenAI: POST $url"
 
         # --- API Call ---
         try {
             $response = Invoke-RestMethod -Uri $url -Method Post -Headers $headers -Body $body -ErrorAction Stop
         }
         catch {
-            Handle-LLMError -Provider "AzureOpenAI" -ErrorRecord $_
+            Handle-LLMError -Message "AzureOpenAI request failed" -Exception $_.Exception -Context "AzureOpenAI"
             throw
         }
 
@@ -67,11 +70,11 @@ function Invoke-AzureOpenAI {
             $content = ($response | ConvertTo-Json -Depth 5)
         }
 
-        Write-LLMLog "AzureOpenAI" "Response: $content"
+        Write-LLMLog -Level "DEBUG" -Message "AzureOpenAI response: $($content.Substring(0, [Math]::Min(80, $content.Length)))..."
         return $content
     }
     catch {
-        Handle-LLMError -Provider "AzureOpenAI" -ErrorRecord $_
+        Handle-LLMError -Message $_.Exception.Message -Exception $_.Exception -Context "AzureOpenAI"
         throw
     }
 }

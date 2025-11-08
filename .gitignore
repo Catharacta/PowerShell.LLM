@@ -1,9 +1,30 @@
-# PowerShell
-*.psd1
-*.psm1
+# ==========================
+# PowerShell モジュール開発用
+# ==========================
 
-# APIキーファイル
+# ⚠️ モジュールの本体は除外しない！
+# *.psd1 や *.psm1 は必ずリポジトリに含める
+
+# 一時ファイル・ビルド成果物
+*.log
+*.tmp
+*.cache
+*.bak
+*.zip
+*.nupkg
+
+# PowerShell 一時ファイルなど
+*.ps1xml
+*.pssc
+
+# テスト出力
+TestResults/
+coverage/
+
+# 環境変数・秘密情報
 .env
 
 # VSCode / IDE
 .vscode/
+.idea/
+.0

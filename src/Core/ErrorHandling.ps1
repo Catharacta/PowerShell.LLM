@@ -2,34 +2,42 @@
 # ErrorHandling.ps1 - 共通エラーハンドリングユーティリティ
 # ===============================================
 
-if (-not (Get-Command Write-LLMLog -ErrorAction SilentlyContinue)) {
-    . "$PSScriptRoot/Logger.ps1"
-}
-
 function Handle-LLMError {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
-        [System.Management.Automation.ErrorRecord]$ErrorRecord,
+        [string]$Message,
 
-        [string]$Context = "General"
+        [string]$Code = "LLMError",
+
+        [string]$Context = "General",
+
+        [System.Exception]$Exception
     )
 
-    $msg = $ErrorRecord.Exception.Message
-    $type = $ErrorRecord.CategoryInfo.Category
-
-    Write-LLMLog -Level "ERROR" -Message "[$Context] $type - $msg"
-
-    # 詳細ログ（DEBUGのみ）
-    if ($Global:LLM_LogLevel -eq "DEBUG") {
-        Write-LLMLog -Level "DEBUG" -Message ("StackTrace: " + $ErrorRecord.ScriptStackTrace)
+    # 構造化エラーオブジェクトを作成
+    $errorObject = [PSCustomObject]@{
+        Status    = "Error"
+        Type      = "LLMError"
+        Message   = $Message
+        Code      = $Code
+        Context   = $Context
+        Exception = $Exception
+        Timestamp = (Get-Date)
     }
 
-    # ユーザー向けに見やすいメッセージを表示
-    Write-Host "`n❌ エラー発生: $msg" -ForegroundColor Red
-
-    # 必要に応じて再スロー（Pesterなどで失敗検出）
-    if ($env:LLM_THROW_ON_ERROR -eq "1") {
-        throw $ErrorRecord
+    # ログ出力
+    if (Get-Command Write-LLMLog -ErrorAction SilentlyContinue) {
+        Write-LLMLog -Level "ERROR" -Message "[$Context] $Message"
     }
+
+    # ユーザー向けエラーメッセージ（カラー付き）
+    Write-Host "❌ エラー: $Message" -ForegroundColor Red
+
+    # 詳細ログ（DEBUG時）
+    if ($Global:LLM_LogLevel -eq "DEBUG" -and $Exception) {
+        Write-LLMLog -Level "DEBUG" -Message ("StackTrace: " + $Exception.StackTrace)
+    }
+
+    return $errorObject
 }
