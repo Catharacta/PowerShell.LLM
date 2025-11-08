@@ -36,6 +36,9 @@ PowerShell.LLM/
 │   ├── get_phase_list.ps1
 │   └── run_with_phase.ps1
 │
+├── build/
+│   └──  update-psd1.ps1
+│
 ├── examples/
 │   ├── 01_basic.ps1
 │   └── 02_local_ollama.ps1

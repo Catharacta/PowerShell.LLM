@@ -1,32 +1,27 @@
 # src/Providers/OpenAI.ps1
+# ===============================
+# OpenAI Provider
+# ===============================
 
 function Invoke-OpenAI {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]$Prompt,
-
         [string]$Model = "gpt-4o-mini"
     )
 
     try {
-        # --- 設定を取得 ---
-        $config = Get-LLMConfig -Provider "openai"
-
-        $apiKey = $null
-
-        # 優先順位: config → 環境変数
-        if ($config -and $config.ApiKey) {
-            $apiKey = $config.ApiKey
-        } elseif ($env:OPENAI_API_KEY) {
-            $apiKey = $env:OPENAI_API_KEY
+        $config = $null
+        if (Get-Command Get-LLMConfig -ErrorAction SilentlyContinue) {
+            $config = Get-LLMConfig -Provider "openai"
         }
 
+        $apiKey = if ($config -and $config.ApiKey) { $config.ApiKey } elseif ($env:OPENAI_API_KEY) { $env:OPENAI_API_KEY } else { $null }
         if (-not $apiKey) {
             throw [System.Exception] "❌ OpenAI APIキーが見つかりません。`OPENAI_API_KEY` または設定ファイルを確認してください。"
         }
 
-        # --- APIリクエスト準備 ---
         $uri = "https://api.openai.com/v1/chat/completions"
         $headers = @{
             "Authorization" = "Bearer $apiKey"
@@ -38,15 +33,15 @@ function Invoke-OpenAI {
             messages = @(@{ role = "user"; content = $Prompt })
         } | ConvertTo-Json -Depth 5
 
-        Write-LLMLog "Sending request to OpenAI ($Model)..." "INFO"
+        # ✅ 位置引数形式
+        Write-LLMLog "Invoke-OpenAI called (model: $Model)" "INFO"
+        Write-LLMLog "OpenAI POST $uri" "INFO"
 
-        # --- APIコール ---
         $response = Invoke-RestMethod -Uri $uri -Headers $headers -Body $body -Method Post -ErrorAction Stop
 
-        # --- レスポンス処理 ---
         if ($response.choices) {
             $text = $response.choices[0].message.content
-            Write-LLMLog "Response received: $($text.Substring(0, [Math]::Min(80, $text.Length)))..." "DEBUG"
+            Write-LLMLog "Invoke-OpenAI Response: $($text.Substring(0, [Math]::Min(80, $text.Length)))..." "DEBUG"
             return $text
         } else {
             throw [System.Exception] "OpenAIからの応答が不正です。"
@@ -54,6 +49,6 @@ function Invoke-OpenAI {
     }
     catch {
         Handle-LLMError -ErrorRecord $_ -Context "Invoke-OpenAI"
-        return $null
+        throw
     }
 }

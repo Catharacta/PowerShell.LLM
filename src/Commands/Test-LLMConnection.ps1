@@ -8,17 +8,18 @@ function Test-LLMConnection {
         [string]$Provider = "OpenAI"
     )
 
-    try {
-        Write-LLMLog -Message "Testing LLM connection for provider: $Provider" -Level "Info"
+    Write-LLMLog -Message "Testing LLM connection for provider: $Provider" -Level "Info"
 
-        if ($Provider -eq 'mock') {
-            Write-LLMLog "Mock provider: connection test always succeeds." "INFO"
-            return @{
-                Provider = 'mock'
-                Status   = 'Success'
-                Message  = 'Mock provider connection simulated successfully.'
-            }
+    if ($Provider -eq 'mock') {
+        Write-LLMLog "Mock provider: connection test always succeeds." "INFO"
+        return [pscustomobject]@{
+            Provider = 'mock'
+            Success  = $true
+            Message  = 'Mock provider connection simulated successfully.'
         }
+    }
+
+    try {
         $config = Get-LLMConfig -Provider $Provider
         $apiKey = $config.ApiKey
         if (-not $apiKey) { throw "APIキーが取得できません。" }
@@ -40,12 +41,22 @@ function Test-LLMConnection {
 
         Write-Host "✅ $Provider に正常に接続できました。" -ForegroundColor Green
         Write-LLMLog -Message "$Provider connection test passed." -Level "Info"
-        return $true
+
+        return [pscustomobject]@{
+            Provider = $Provider
+            Success  = $true
+            Message  = "$Provider connection successful."
+        }
     }
     catch {
         Write-Host "❌ $Provider への接続に失敗しました。" -ForegroundColor Red
         Write-LLMLog -Message "$Provider connection test failed: $($_.Exception.Message)" -Level "Error"
-        return $false
+
+        return [pscustomobject]@{
+            Provider = $Provider
+            Success  = $false
+            Message  = $_.Exception.Message
+        }
     }
     finally {
         Flush-LLMLogs
