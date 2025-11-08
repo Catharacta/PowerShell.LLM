@@ -109,6 +109,10 @@ jobs:
             try { pester = JSON.parse(fs.readFileSync('pester-results.json', 'utf8')); } catch {}
             try { lint = JSON.parse(fs.readFileSync('script-analyzer-results.json', 'utf8')); } catch {}
 
+            // 🩹 null や不正データを防御
+            if (!Array.isArray(pester)) pester = [];
+            if (!Array.isArray(lint)) lint = [];
+      
             const passed = pester.filter(t => t.Outcome === 'Passed').length;
             const failed = pester.filter(t => t.Outcome === 'Failed').length;
             const skipped = pester.filter(t => t.Outcome === 'Skipped').length;
