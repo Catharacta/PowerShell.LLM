@@ -16,6 +16,7 @@
     'Invoke-MockLLM' 
     'Invoke-Ollama' 
     'Invoke-OpenAI' 
+    'Set-LLMConfig' 
     'Set-LLMLogLevel' 
     'Test-LLMConnection' 
     'Write-LLMLog'
@@ -23,5 +24,6 @@
     RequiredModules   = @()
     PowerShellVersion = '7.0'
 }
+
 
 

@@ -1,8 +1,3 @@
-# src/Providers/OpenAI.ps1
-# ===============================
-# OpenAI Provider
-# ===============================
-
 function Invoke-OpenAI {
     [CmdletBinding()]
     param(
@@ -11,18 +6,20 @@ function Invoke-OpenAI {
         [string]$Model = "gpt-4o-mini"
     )
 
+    Write-LLMLog "Invoke-OpenAI called (model: $Model)" "INFO"
+
     try {
-        $config = $null
-        if (Get-Command Get-LLMConfig -ErrorAction SilentlyContinue) {
-            $config = Get-LLMConfig -Provider "openai"
+        $config = if (Get-Command Get-LLMConfig -ErrorAction SilentlyContinue) {
+            Get-LLMConfig -Provider "openai"
         }
 
-        $apiKey = if ($config -and $config.ApiKey) { $config.ApiKey } elseif ($env:OPENAI_API_KEY) { $env:OPENAI_API_KEY } else { $null }
+        $apiKey = $config?.ApiKey ?? $env:OPENAI_API_KEY
         if (-not $apiKey) {
-            throw [System.Exception] "❌ OpenAI APIキーが見つかりません。`OPENAI_API_KEY` または設定ファイルを確認してください。"
+            throw "❌ OpenAI APIキーが見つかりません。`OPENAI_API_KEY` または設定ファイルを確認してください。"
         }
 
-        $uri = "https://api.openai.com/v1/chat/completions"
+        $uri = if ($config.Url) { $config.Url } else { "https://api.openai.com/v1/chat/completions" }
+
         $headers = @{
             "Authorization" = "Bearer $apiKey"
             "Content-Type"  = "application/json"
@@ -31,20 +28,19 @@ function Invoke-OpenAI {
         $body = @{
             model    = $Model
             messages = @(@{ role = "user"; content = $Prompt })
+            stream   = $false
         } | ConvertTo-Json -Depth 5
 
-        # ✅ 位置引数形式
-        Write-LLMLog "Invoke-OpenAI called (model: $Model)" "INFO"
-        Write-LLMLog "OpenAI POST $uri" "INFO"
+        Write-LLMLog "OpenAI POST $uri" "DEBUG"
 
         $response = Invoke-RestMethod -Uri $uri -Headers $headers -Body $body -Method Post -ErrorAction Stop
 
-        if ($response.choices) {
+        if ($response.choices -and $response.choices[0].message.content) {
             $text = $response.choices[0].message.content
             Write-LLMLog "Invoke-OpenAI Response: $($text.Substring(0, [Math]::Min(80, $text.Length)))..." "DEBUG"
             return $text
         } else {
-            throw [System.Exception] "OpenAIからの応答が不正です。"
+            throw "❌ OpenAI API応答にcontentが含まれていません。"
         }
     }
     catch {
